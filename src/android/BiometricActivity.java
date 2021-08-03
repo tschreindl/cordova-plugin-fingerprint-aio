@@ -76,7 +76,11 @@ public class BiometricActivity extends AppCompatActivity {
     }
 
     private void justAuthenticate() {
-        mBiometricPrompt.authenticate(createPromptInfo());
+        if (mPromptInfo.isDeviceCredentialAllowed() && mPromptInfo.deviceCredentialsAvailable()) {
+            showAuthenticationScreen();
+        } else {
+            mBiometricPrompt.authenticate(createPromptInfo());
+        }
     }
 
     private void authenticateToDecrypt() throws CryptoException {

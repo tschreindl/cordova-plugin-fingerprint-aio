@@ -1,5 +1,8 @@
 package de.niklasmerz.cordova.biometric;
 
+import static androidx.core.content.ContextCompat.getSystemService;
+
+import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -36,10 +39,12 @@ public class Fingerprint extends CordovaPlugin {
         );
     }
 
-    public boolean execute(final String action, JSONArray args, CallbackContext callbackContext) {
+    public boolean execute(final String action, JSONArray jsonArgs, CallbackContext callbackContext) {
 
         this.mCallbackContext = callbackContext;
         Log.v(TAG, "Fingerprint action: " + action);
+
+        Args args = new Args(jsonArgs);
 
         if ("authenticate".equals(action)) {
             executeAuthenticate(args);
@@ -54,24 +59,28 @@ public class Fingerprint extends CordovaPlugin {
              return true;
 
          } else if ("isAvailable".equals(action)) {
-            executeIsAvailable();
+            executeIsAvailable(args);
             return true;
 
         }
         return false;
     }
 
-    private void executeIsAvailable() {
+    private void executeIsAvailable(Args args) {
         PluginError error = canAuthenticate();
         if (error != null) {
-            sendError(error);
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P){
+            if (args.getBoolean("allowBackup", false) && isDeviceUsingCredentials()) {
+                sendSuccess("device-credentials");
+            } else {
+                sendError(error);
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             sendSuccess("biometric");
         } else {
             sendSuccess("finger");
         }
     }
-    private void executeRegisterBiometricSecret(JSONArray args) {
+    private void executeRegisterBiometricSecret(Args args) {
         // should at least contains the secret
         if (args == null) {
             sendError(PluginError.BIOMETRIC_ARGS_PARSING_FAILED);
@@ -80,19 +89,23 @@ public class Fingerprint extends CordovaPlugin {
         this.runBiometricActivity(args, BiometricActivityType.REGISTER_SECRET);
     }
 
-    private void executeLoadBiometricSecret(JSONArray args) {
+    private void executeLoadBiometricSecret(Args args) {
         this.runBiometricActivity(args, BiometricActivityType.LOAD_SECRET);
     }
 
-    private void executeAuthenticate(JSONArray args) {
+    private void executeAuthenticate(Args args) {
         this.runBiometricActivity(args, BiometricActivityType.JUST_AUTHENTICATE);
     }
 
-    private void runBiometricActivity(JSONArray args, BiometricActivityType type) {
+    private void runBiometricActivity(Args args, BiometricActivityType type) {
         PluginError error = canAuthenticate();
         if (error != null) {
-            sendError(error);
-            return;
+            if (!(args.getBoolean(PromptInfo.DISABLE_BACKUP, false)) && isDeviceUsingCredentials()) {
+                args.putBoolean(PromptInfo.DEVICE_CREDENTIALS_AVAILABLE, true);
+            } else {
+                sendError(error);
+                return;
+            }
         }
         cordova.getActivity().runOnUiThread(() -> {
             mPromptInfoBuilder.parseArgs(args, type);
@@ -182,5 +195,11 @@ public class Fingerprint extends CordovaPlugin {
         } catch (PackageManager.NameNotFoundException e) {
             return null;
         }
+    }
+
+    private boolean isDeviceUsingCredentials()
+    {
+        KeyguardManager km = getSystemService(cordova.getContext(), KeyguardManager.class);
+        return (km != null && km.isKeyguardSecure());
     }
 }

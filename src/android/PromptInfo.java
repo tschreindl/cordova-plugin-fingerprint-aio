@@ -6,7 +6,7 @@ import org.json.JSONArray;
 
 class PromptInfo {
 
-    private static final String DISABLE_BACKUP = "disableBackup";
+    public static final String DISABLE_BACKUP = "disableBackup";
     private static final String TITLE = "title";
     private static final String SUBTITLE = "subtitle";
     private static final String DESCRIPTION = "description";
@@ -16,6 +16,7 @@ class PromptInfo {
     private static final String INVALIDATE_ON_ENROLLMENT = "invalidateOnEnrollment";
     private static final String SECRET = "secret";
     private static final String BIOMETRIC_ACTIVITY_TYPE = "biometricActivityType";
+    public static final String DEVICE_CREDENTIALS_AVAILABLE = "deviceCredentialsAvailable";
 
     static final String SECRET_EXTRA = "secret";
 
@@ -65,6 +66,10 @@ class PromptInfo {
         return BiometricActivityType.fromValue(bundle.getInt(BIOMETRIC_ACTIVITY_TYPE));
     }
 
+    boolean deviceCredentialsAvailable() {
+        return bundle.getBoolean(DEVICE_CREDENTIALS_AVAILABLE);
+    }
+
     public static final class Builder {
         private static final String TAG = "PromptInfo.Builder";
         private Bundle bundle;
@@ -76,6 +81,7 @@ class PromptInfo {
         private String cancelButtonTitle = "Cancel";
         private boolean confirmationRequired = true;
         private boolean invalidateOnEnrollment = false;
+        private boolean deviceCredentialsAvailable = false;
         private String secret = null;
         private BiometricActivityType type = null;
 
@@ -110,15 +116,15 @@ class PromptInfo {
             bundle.putBoolean(CONFIRMATION_REQUIRED, this.confirmationRequired);
             bundle.putBoolean(INVALIDATE_ON_ENROLLMENT, this.invalidateOnEnrollment);
             bundle.putInt(BIOMETRIC_ACTIVITY_TYPE, this.type.getValue());
+            bundle.putBoolean(DEVICE_CREDENTIALS_AVAILABLE, this.deviceCredentialsAvailable);
             promptInfo.bundle = bundle;
 
             return promptInfo;
         }
 
-        void parseArgs(JSONArray jsonArgs, BiometricActivityType type) {
+        void parseArgs(Args args, BiometricActivityType type) {
             this.type = type;
 
-            Args args = new Args(jsonArgs);
             disableBackup = args.getBoolean(DISABLE_BACKUP, disableBackup);
             title = args.getString(TITLE, title);
             subtitle = args.getString(SUBTITLE, subtitle);
@@ -128,6 +134,7 @@ class PromptInfo {
             confirmationRequired = args.getBoolean(CONFIRMATION_REQUIRED, confirmationRequired);
             invalidateOnEnrollment = args.getBoolean(INVALIDATE_ON_ENROLLMENT, false);
             secret = args.getString(SECRET, null);
+            deviceCredentialsAvailable = args.getBoolean(DEVICE_CREDENTIALS_AVAILABLE, false);
         }
     }
 }

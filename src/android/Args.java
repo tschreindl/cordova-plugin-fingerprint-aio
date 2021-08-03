@@ -26,6 +26,15 @@ public class Args {
         return defaultValue;
     }
 
+    public void putBoolean(String name, Boolean value)
+    {
+        try {
+            getArgsObject().put(name, value);
+        } catch (JSONException e) {
+            Log.e(TAG, "Can't put '" + name + "'.", e);
+        }
+    }
+
     public String getString(String name, String defaultValue) {
         try {
             if (getArgsObject().optString(name) != null
